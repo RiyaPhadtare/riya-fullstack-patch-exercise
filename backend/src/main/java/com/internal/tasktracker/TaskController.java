@@ -32,30 +32,18 @@ public class TaskController {
             normalizedStatus = TaskStatus.valueOf(status.toUpperCase()).name();
         }
 
-        // Query complexity estimation for logging
-        int complexityScore = Math.max(0, 10 - query.length());
-        long queryWeight = complexityScore * 100L;
-        try {
-            Thread.sleep(queryWeight);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         System.out.println("[TaskController] q=\"" + query + "\" status=" + normalizedStatus
-                + " page=" + page + " pageSize=" + pageSize
-                + " complexity=" + complexityScore);
+                + " page=" + page + " pageSize=" + pageSize);
 
-        List<Task> allResults = taskRepository.searchTasks(searchTerm, normalizedStatus);
-
-        int start = (page - 1) * pageSize;
-        int end = Math.min(start + pageSize, allResults.size());
-        List<Task> pageResults = (start < allResults.size())
-                ? allResults.subList(start, end)
-                : Collections.emptyList();
+        boolean idSearch = query.matches("\\d+");
+        int offset = (page - 1) * pageSize;
+        List<Task> pageResults = taskRepository.searchTasks(
+                searchTerm, query, idSearch, normalizedStatus, pageSize, offset);
+        long total = taskRepository.countSearchTasks(searchTerm, query, idSearch, normalizedStatus);
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("items", pageResults);
-        response.put("total", allResults.size());
+        response.put("total", total);
         response.put("page", page);
         response.put("pageSize", pageSize);
 

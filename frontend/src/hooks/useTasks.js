@@ -8,17 +8,27 @@ export function useTasks(query, status, page, pageSize) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
 
-    fetchTasks({ query, status, page, pageSize })
-      .then((data) => {
-        setTasks(data.items);
-        setTotal(data.total);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-      });
+    const timeoutId = setTimeout(() => {
+      fetchTasks({ query, status, page, pageSize })
+        .then((data) => {
+          if (cancelled) return;
+          setTasks(data.items);
+          setTotal(data.total);
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setError(err.message);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [query, status, page, pageSize]);
 
   return { tasks, total, loading, error };
